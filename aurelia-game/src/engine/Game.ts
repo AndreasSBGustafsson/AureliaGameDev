@@ -1,3 +1,4 @@
+import { isColliding } from "./Colision";
 import type { GameObject } from "./GameObject";
 
 export type Game = {
@@ -7,8 +8,7 @@ export type Game = {
 
 export const createGame = (
   canvas: HTMLCanvasElement,
-  objects: GameObject[],
-  keys: Record<string, boolean>
+  objects: GameObject[]
 ) => {
   const ctx = canvas.getContext("2d")!;
   const game: Game = {
@@ -20,13 +20,29 @@ export const createGame = (
     const deltaTime = (timestamp - game.lastTime) / 500;
     game.lastTime = timestamp;
 
-    // Uppdatera alla objekt
+    // --- UPDATE ALL OBJECTS ---
     game.objects.forEach((obj) => obj.update(obj, deltaTime));
 
-    // Rensa canvas
+    // --- COLLISION: PLAYER ATTACK VS ENEMIES ---
+    const player = game.objects.find((o) => o.isPlayer);
+
+    if (player && player.attackHitbox) {
+      game.objects.forEach((target) => {
+        if (target !== player && target.isEnemy) {
+          if (isColliding(player.attackHitbox!, target)) {
+            target.isHit = true;
+            target.hitTimer = 0.15;
+            console.log("Fiende träffad!", target);
+            // Här kan du minska HP etc.
+          }
+        }
+      });
+    }
+
+    // --- CLEAR ---
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Rita alla objekt
+    // --- DRAW ---
     game.objects.forEach((obj) => obj.draw(obj, ctx));
 
     requestAnimationFrame(loop);

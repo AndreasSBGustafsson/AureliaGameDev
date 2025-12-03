@@ -14,25 +14,34 @@ export const createEnemy = (
     width,
     height,
     (obj, dt) => {
-      // Update-logik för fienden
-      // För tillfället kan vi låta den stå stilla
-      // Senare kan du lägga till enkel AI eller rörelse fram och tillbaka
+      // Timer for flashing
+      if (obj.isHit) {
+        obj.hitTimer -= dt;
+        if (obj.hitTimer <= 0) {
+          obj.isHit = false;
+          obj.hitTimer = 0;
+        }
+      }
     },
     (obj, ctx) => {
-      // Draw-fiende
-      ctx.fillStyle = "red"; // Fienden är röd
+      // if hited → white colour
+      ctx.fillStyle = obj.isHit ? "white" : "red";
+
       ctx.fillRect(obj.x, obj.y, obj.width, obj.height);
     }
   );
 
-  // Initiera eventuella defaultvärden
+  // Initiate default values
   enemy.velY = 0;
   enemy.grounded = false;
   enemy.isAttacking = false;
   enemy.attackCooldown = 0;
   enemy.attackTimer = 0;
-  enemy.spacePressedLastFrame = false;
   enemy.attackHitbox = null;
+
+  enemy.isEnemy = true;
+  enemy.isHit = false;
+  enemy.hitTimer = 0;
 
   return enemy;
 };

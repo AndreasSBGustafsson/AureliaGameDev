@@ -16,9 +16,72 @@ export const createPlayer = (): GameObject => {
     50,
     100,
     (obj, dt) => {
-      const spacePressed = keys[" "];
+      const attackPressed = keys["x"];
+      const shiftPressed = keys["c"];
 
-      // 1. Movement
+      // ===============================
+      // 0. STATE UPDATE & ACTION TIMER
+      // ===============================
+      if (obj.movementState !== "idle") {
+        obj.actionTimer -= dt;
+
+        if (obj.actionTimer <= 0) {
+          obj.movementState = "idle";
+          obj.dashSpeed = 0;
+          obj.dashDirection = 0;
+          obj.dashDistance = 0;
+          obj.invincible = false;
+        }
+      }
+
+      // ===============================
+      // 1. Stepback (Shift) - One-shot
+      // ===============================
+      if (
+        shiftPressed &&
+        !obj.stepbackPressedLastFrame &&
+        obj.movementState === "idle"
+      ) {
+        obj.movementState = "stepback";
+
+        const lockTime = 1; // seconds
+        obj.actionTimer = lockTime;
+
+        const totalDistance = 300; // pixels
+        obj.dashDistance = totalDistance;
+
+        obj.dashDirection = obj.facing === "right" ? -1 : 1;
+        obj.dashSpeed =
+          obj.dashDirection * (obj.dashDistance / obj.actionTimer);
+
+        obj.invincible = true;
+      }
+
+      // Update previous state for Shift direct after control
+      obj.stepbackPressedLastFrame = shiftPressed;
+
+      // ===============================
+      // 2. Dash per-frame
+      // ===============================
+      if (obj.movementState === "stepback") {
+        obj.x += obj.dashSpeed * dt;
+        obj.velY = 0; // lock Y-movement
+        obj.actionTimer -= dt;
+
+        if (obj.actionTimer <= 0) {
+          obj.movementState = "idle";
+          obj.dashSpeed = 0;
+          obj.dashDirection = 0;
+          obj.dashDistance = 0;
+          obj.invincible = false;
+        }
+
+        return; // skip normal movement under dash
+      }
+
+      // ===============================
+      // 3. Normal movement
+      // ===============================
       if (keys["ArrowLeft"]) {
         obj.x -= 200 * dt;
         obj.facing = "left";
@@ -28,11 +91,12 @@ export const createPlayer = (): GameObject => {
         obj.facing = "right";
       }
 
-      // 2. Gravity
+      // ===============================
+      // 4. Gravity & Jump
+      // ===============================
       obj.velY += 800 * dt;
       obj.y += obj.velY * dt;
 
-      // 3. Ground collision
       if (obj.y + obj.height >= 550) {
         obj.y = 550 - obj.height;
         obj.velY = 0;
@@ -41,16 +105,17 @@ export const createPlayer = (): GameObject => {
         obj.grounded = false;
       }
 
-      // 4. Jump
-      if (keys["ArrowUp"] && obj.grounded) {
+      if (keys["z"] && obj.grounded) {
         obj.velY = -500;
         obj.grounded = false;
       }
 
-      // 5. Attack start
+      // ===============================
+      // 5. Attack logic (X) - swipe
+      // ===============================
       if (
-        spacePressed &&
-        !obj.spacePressedLastFrame &&
+        attackPressed &&
+        !obj.attackPressedLastFrame &&
         !obj.isAttacking &&
         obj.attackCooldown <= 0
       ) {
@@ -62,7 +127,6 @@ export const createPlayer = (): GameObject => {
         const hw = 20;
         const maxRange = 60;
 
-        // Initialize hitbox at player edge
         if (obj.facing === "right") {
           obj.attackHitbox = {
             x: obj.x + obj.width,
@@ -80,14 +144,14 @@ export const createPlayer = (): GameObject => {
         }
       }
 
+      // ===============================
       // 6. Swipe update
+      // ===============================
       if (obj.isAttacking && obj.attackHitbox) {
         const swipeSpeed = 600;
         const maxRange = 60;
-        const backRange = 20;
         const hw = obj.attackHitbox.height / 2;
 
-        // Update offset
         if (obj.attackPhase === "forward") {
           obj.attackOffsetX += swipeSpeed * dt;
           if (obj.attackOffsetX >= maxRange) obj.attackPhase = "back";
@@ -96,7 +160,6 @@ export const createPlayer = (): GameObject => {
           if (obj.attackOffsetX <= 0) obj.attackPhase = "done";
         }
 
-        // Update hitbox position and width
         if (obj.facing === "right") {
           if (obj.attackPhase === "forward") {
             obj.attackHitbox.x = obj.x + obj.width;
@@ -124,11 +187,11 @@ export const createPlayer = (): GameObject => {
         }
       }
 
-      // 7. Cooldown
+      // ===============================
+      // 7. Cooldown & previous input
+      // ===============================
       if (obj.attackCooldown > 0) obj.attackCooldown -= dt;
-
-      // 8. Update previous space state
-      obj.spacePressedLastFrame = spacePressed;
+      obj.attackPressedLastFrame = attackPressed;
     },
     (obj, ctx) => {
       ctx.fillStyle = "cyan";
@@ -146,15 +209,24 @@ export const createPlayer = (): GameObject => {
     }
   );
 
+  // ===============================
   // Defaults
+  // ===============================
   player.attackCooldown = 0;
   player.attackTimer = 0;
   player.velY = 0;
   player.grounded = false;
   player.isAttacking = false;
-  player.spacePressedLastFrame = false;
+  player.attackPressedLastFrame = false;
   player.attackPhase = "done";
   player.attackOffsetX = 0;
+  player.stepbackPressedLastFrame = false;
+  player.movementState = "idle";
+  player.actionTimer = 0;
+  player.dashSpeed = 0;
+  player.dashDirection = 0;
+  player.dashDistance = 0;
+  player.invincible = false;
 
   return player;
 };

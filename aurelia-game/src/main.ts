@@ -14,12 +14,13 @@ window.addEventListener("DOMContentLoaded", () => {
 
   canvas.width = 800;
   canvas.height = 600;
+  const player = createPlayer(); // Skapa spelare
+  player.isPlayer = true;
 
-  const objects: GameObject[] = [
-    createGround(),
-    createPlayer(),
-    createEnemy(400, 450, 50, 100),
-  ];
+  const enemy = createEnemy(400, 450, 50, 100);
+  enemy.isEnemy = true;
+
+  const objects: GameObject[] = [createGround(), player, enemy];
 
   createGame(canvas, objects, keys);
 });
