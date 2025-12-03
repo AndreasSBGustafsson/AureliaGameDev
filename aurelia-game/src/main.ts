@@ -4,6 +4,7 @@ import { createGround } from "./engine/Ground";
 import { createGame } from "./engine/Game";
 import type { GameObject } from "./engine/GameObject";
 import { keys, setupInputListeners } from "./utils/Input";
+import { createEnemy } from "./engine/Emenies";
 
 setupInputListeners();
 
@@ -14,7 +15,11 @@ window.addEventListener("DOMContentLoaded", () => {
   canvas.width = 800;
   canvas.height = 600;
 
-  const objects: GameObject[] = [createGround(), createPlayer()];
+  const objects: GameObject[] = [
+    createGround(),
+    createPlayer(),
+    createEnemy(400, 450, 50, 100),
+  ];
 
   createGame(canvas, objects, keys);
 });

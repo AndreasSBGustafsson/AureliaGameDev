@@ -17,6 +17,8 @@ export type GameObject = {
   attackCooldown?: number;
   attackTimer?: number;
   attackHitbox?: AttackHitbox | null;
+  attackPhase?: "forward" | "back" | "done";
+  attackOffsetX?: number;
   spacePressedLastFrame?: boolean;
 
   update: (obj: GameObject, deltaTime: number) => void;
@@ -42,6 +44,8 @@ export const createGameObject = (
   attackCooldown: 0,
   attackTimer: 0,
   attackHitbox: null,
+  attackPhase: "done",
+  attackOffsetX: 0,
   spacePressedLastFrame: false,
   update,
   draw,

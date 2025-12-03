@@ -16,7 +16,6 @@ export const createPlayer = (): GameObject => {
     50,
     100,
     (obj, dt) => {
-      // Track spacebar press
       const spacePressed = keys[" "];
 
       // 1. Movement
@@ -44,11 +43,11 @@ export const createPlayer = (): GameObject => {
 
       // 4. Jump
       if (keys["ArrowUp"] && obj.grounded) {
-        obj.velY = -400;
+        obj.velY = -500;
         obj.grounded = false;
       }
 
-      // 5. Attack start - only once per press
+      // 5. Attack start
       if (
         spacePressed &&
         !obj.spacePressedLastFrame &&
@@ -56,60 +55,85 @@ export const createPlayer = (): GameObject => {
         obj.attackCooldown <= 0
       ) {
         obj.isAttacking = true;
-        obj.attackCooldown = 0.3;
-        obj.attackTimer = 0.12;
+        obj.attackCooldown = 0.5;
+        obj.attackPhase = "forward";
+        obj.attackOffsetX = 0;
 
-        const range = 40;
         const hw = 20;
+        const maxRange = 60;
 
+        // Initialize hitbox at player edge
         if (obj.facing === "right") {
           obj.attackHitbox = {
             x: obj.x + obj.width,
             y: obj.y + obj.height / 2 - hw,
-            width: range,
+            width: 0,
             height: hw * 2,
           };
         } else {
           obj.attackHitbox = {
-            x: obj.x - range,
+            x: obj.x - maxRange,
             y: obj.y + obj.height / 2 - hw,
-            width: range,
+            width: 0,
             height: hw * 2,
           };
         }
       }
 
-      // 6. Update attack hitbox to follow player
+      // 6. Swipe update
       if (obj.isAttacking && obj.attackHitbox) {
+        const swipeSpeed = 600;
+        const maxRange = 60;
+        const backRange = 20;
         const hw = obj.attackHitbox.height / 2;
-        const range = obj.attackHitbox.width;
-        if (obj.facing === "right") {
-          obj.attackHitbox.x = obj.x + obj.width;
-          obj.attackHitbox.y = obj.y + obj.height / 2 - hw;
-        } else {
-          obj.attackHitbox.x = obj.x - range;
-          obj.attackHitbox.y = obj.y + obj.height / 2 - hw;
-        }
-      }
 
-      // 7. Attack timer
-      if (obj.isAttacking) {
-        obj.attackTimer -= dt;
-        if (obj.attackTimer <= 0) {
+        // Update offset
+        if (obj.attackPhase === "forward") {
+          obj.attackOffsetX += swipeSpeed * dt;
+          if (obj.attackOffsetX >= maxRange) obj.attackPhase = "back";
+        } else if (obj.attackPhase === "back") {
+          obj.attackOffsetX -= swipeSpeed * dt;
+          if (obj.attackOffsetX <= 0) obj.attackPhase = "done";
+        }
+
+        // Update hitbox position and width
+        if (obj.facing === "right") {
+          if (obj.attackPhase === "forward") {
+            obj.attackHitbox.x = obj.x + obj.width;
+            obj.attackHitbox.width = obj.attackOffsetX;
+          } else if (obj.attackPhase === "back") {
+            obj.attackHitbox.x =
+              obj.x + obj.width + (maxRange - obj.attackOffsetX) - maxRange;
+            obj.attackHitbox.width = obj.attackOffsetX;
+          }
+        } else {
+          if (obj.attackPhase === "forward") {
+            obj.attackHitbox.x = obj.x - maxRange + obj.attackOffsetX;
+            obj.attackHitbox.width = obj.attackOffsetX;
+          } else if (obj.attackPhase === "back") {
+            obj.attackHitbox.x = obj.x - obj.attackOffsetX;
+            obj.attackHitbox.width = obj.attackOffsetX;
+          }
+        }
+
+        obj.attackHitbox.y = obj.y + obj.height / 2 - hw;
+
+        if (obj.attackPhase === "done") {
           obj.isAttacking = false;
           obj.attackHitbox = null;
         }
       }
 
-      // 8. Cooldown
+      // 7. Cooldown
       if (obj.attackCooldown > 0) obj.attackCooldown -= dt;
 
-      // 9. Update previous space state
+      // 8. Update previous space state
       obj.spacePressedLastFrame = spacePressed;
     },
     (obj, ctx) => {
       ctx.fillStyle = "cyan";
       ctx.fillRect(obj.x, obj.y, obj.width, obj.height);
+
       if (obj.attackHitbox) {
         ctx.fillStyle = "orange";
         ctx.fillRect(
@@ -122,13 +146,15 @@ export const createPlayer = (): GameObject => {
     }
   );
 
-  // Ensure numeric defaults
+  // Defaults
   player.attackCooldown = 0;
   player.attackTimer = 0;
   player.velY = 0;
   player.grounded = false;
   player.isAttacking = false;
   player.spacePressedLastFrame = false;
+  player.attackPhase = "done";
+  player.attackOffsetX = 0;
 
   return player;
 };
