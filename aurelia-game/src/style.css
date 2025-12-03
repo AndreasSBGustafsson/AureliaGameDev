@@ -1,0 +1,22 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+}
+
+#app {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+}
+
+canvas#gameCanvas {
+  width: 800px;
+  height: 600px;
+  border: 2px solid #fff;
+  background-color: #f0e6c8; /* ljus bakgrund */
+}
