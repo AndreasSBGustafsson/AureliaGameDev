@@ -35,37 +35,46 @@ export const createPlayer = (): GameObject => {
       }
 
       // ===============================
-      // 1. Stepback (Shift) - One-shot
+      // 1. Stepback / Roll
       // ===============================
       if (
         shiftPressed &&
         !obj.stepbackPressedLastFrame &&
         obj.movementState === "idle"
       ) {
-        obj.movementState = "stepback";
+        const facingDirectionPressed =
+          (obj.facing === "right" && keys["ArrowRight"]) ||
+          (obj.facing === "left" && keys["ArrowLeft"]);
 
-        const lockTime = 1; // seconds
-        obj.actionTimer = lockTime;
-
-        const totalDistance = 300; // pixels
-        obj.dashDistance = totalDistance;
-
-        obj.dashDirection = obj.facing === "right" ? -1 : 1;
-        obj.dashSpeed =
-          obj.dashDirection * (obj.dashDistance / obj.actionTimer);
-
-        obj.invincible = true;
+        if (facingDirectionPressed) {
+          // Roll framåt
+          obj.movementState = "roll";
+          obj.actionTimer = 0.5;
+          const rollDistance = 300;
+          obj.dashDirection = obj.facing === "right" ? 1 : -1;
+          obj.dashDistance = rollDistance;
+          obj.dashSpeed = obj.dashDirection * (rollDistance / obj.actionTimer);
+          obj.invincible = true;
+        } else {
+          // Stepback bakåt
+          obj.movementState = "stepback";
+          const lockTime = 0.5;
+          obj.actionTimer = lockTime;
+          const stepbackDistance = 200;
+          obj.dashDirection = obj.facing === "right" ? -1 : 1;
+          obj.dashDistance = stepbackDistance;
+          obj.dashSpeed =
+            obj.dashDirection * (stepbackDistance / obj.actionTimer);
+          obj.invincible = true;
+        }
       }
-
-      // Update previous state for Shift direct after control
-      obj.stepbackPressedLastFrame = shiftPressed;
 
       // ===============================
       // 2. Dash per-frame
       // ===============================
-      if (obj.movementState === "stepback") {
+      if (obj.movementState === "stepback" || obj.movementState === "roll") {
         obj.x += obj.dashSpeed * dt;
-        obj.velY = 0; // lock Y-movement
+        obj.velY = 0; // lås Y-rörelse
         obj.actionTimer -= dt;
 
         if (obj.actionTimer <= 0) {
@@ -76,8 +85,12 @@ export const createPlayer = (): GameObject => {
           obj.invincible = false;
         }
 
-        return; // skip normal movement under dash
+        obj.stepbackPressedLastFrame = shiftPressed;
+        return; // hoppa över vanlig movement
       }
+
+      // Update previous state för Shift
+      obj.stepbackPressedLastFrame = shiftPressed;
 
       // ===============================
       // 3. Normal movement
@@ -160,23 +173,23 @@ export const createPlayer = (): GameObject => {
           if (obj.attackOffsetX <= 0) obj.attackPhase = "done";
         }
 
+        // Update hitbox position
         if (obj.facing === "right") {
-          if (obj.attackPhase === "forward") {
-            obj.attackHitbox.x = obj.x + obj.width;
-            obj.attackHitbox.width = obj.attackOffsetX;
-          } else if (obj.attackPhase === "back") {
-            obj.attackHitbox.x =
-              obj.x + obj.width + (maxRange - obj.attackOffsetX) - maxRange;
-            obj.attackHitbox.width = obj.attackOffsetX;
-          }
+          obj.attackHitbox.x =
+            obj.x +
+            obj.width +
+            (obj.attackPhase === "back" ? -obj.attackOffsetX : 0);
+          obj.attackHitbox.width =
+            obj.attackPhase === "forward"
+              ? obj.attackOffsetX
+              : obj.attackOffsetX;
         } else {
-          if (obj.attackPhase === "forward") {
-            obj.attackHitbox.x = obj.x - maxRange + obj.attackOffsetX;
-            obj.attackHitbox.width = obj.attackOffsetX;
-          } else if (obj.attackPhase === "back") {
-            obj.attackHitbox.x = obj.x - obj.attackOffsetX;
-            obj.attackHitbox.width = obj.attackOffsetX;
-          }
+          obj.attackHitbox.x =
+            obj.x -
+            (obj.attackPhase === "forward"
+              ? maxRange - obj.attackOffsetX
+              : obj.attackOffsetX);
+          obj.attackHitbox.width = obj.attackOffsetX;
         }
 
         obj.attackHitbox.y = obj.y + obj.height / 2 - hw;
