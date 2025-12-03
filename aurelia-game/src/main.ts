@@ -3,16 +3,18 @@ import { createPlayer } from "./engine/Player";
 import { createGround } from "./engine/Ground";
 import { createGame } from "./engine/Game";
 import type { GameObject } from "./engine/GameObject";
+import { keys, setupInputListeners } from "./utils/Input";
 
-const canvas = document.getElementById("gameCanvas") as HTMLCanvasElement;
-canvas.width = 800;
-canvas.height = 600;
+setupInputListeners();
 
-const keys: Record<string, boolean> = {};
-window.addEventListener("keydown", (e) => (keys[e.key] = true));
-window.addEventListener("keyup", (e) => (keys[e.key] = false));
+window.addEventListener("DOMContentLoaded", () => {
+  const canvas = document.getElementById("gameCanvas") as HTMLCanvasElement;
+  if (!canvas) return;
 
-const objects: GameObject[] = [createGround(), createPlayer(keys)];
+  canvas.width = 800;
+  canvas.height = 600;
 
-// Starta spelet med Game.ts
-createGame(canvas, objects, keys);
+  const objects: GameObject[] = [createGround(), createPlayer()];
+
+  createGame(canvas, objects, keys);
+});

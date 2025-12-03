@@ -1,3 +1,10 @@
+export type AttackHitbox = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
 export type GameObject = {
   x: number;
   y: number;
@@ -5,6 +12,13 @@ export type GameObject = {
   height: number;
   velY?: number;
   grounded?: boolean;
+  facing?: "left" | "right";
+  isAttacking?: boolean;
+  attackCooldown?: number;
+  attackTimer?: number;
+  attackHitbox?: AttackHitbox | null;
+  spacePressedLastFrame?: boolean;
+
   update: (obj: GameObject, deltaTime: number) => void;
   draw: (obj: GameObject, ctx: CanvasRenderingContext2D) => void;
 };
@@ -21,6 +35,14 @@ export const createGameObject = (
   y,
   width,
   height,
+  velY: 0,
+  grounded: false,
+  facing: "right",
+  isAttacking: false,
+  attackCooldown: 0,
+  attackTimer: 0,
+  attackHitbox: null,
+  spacePressedLastFrame: false,
   update,
   draw,
 });
